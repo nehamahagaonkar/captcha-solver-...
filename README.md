@@ -1,56 +1,47 @@
-# Captcha Solver (Browser, Tesseract.js)
-
-MIT-licensed single-page web app that loads a captcha image from the `?url=` query parameter, preprocesses it in-canvas, and performs OCR in the browser using Tesseract.js to display the solved text. If no URL is provided, a built-in sample image is used.
+# Captcha Solver (Browser, Tesseract.js) — MIT
 
 ## Overview
+This is a single-page, browser-based captcha solver that uses Tesseract.js to OCR text from an image. It accepts a captcha image URL via the query parameter ?url=https://.../image.png, displays the image, performs light preprocessing, and shows the solved text. If no URL is provided, it defaults to a generated sample captcha.
 
-- Loads image from `?url=https://.../image.png` (or any supported image format/URL).
-- Displays both the original and a preprocessed version (grayscale, optional denoise, binarization, invert).
-- Solves using Tesseract.js with:
-  - Language: `eng`
-  - Page segmentation mode: single line
-  - Character whitelist: A–Z, a–z, 0–9
-- Attempts to show a result within ~15 seconds.
-- No server required; runs entirely in the browser.
+Key features:
+- URL parameter support: pass ?url=...
+- In-browser OCR via Tesseract.js (no server required)
+- Image preprocessing (grayscale + Otsu threshold + scaling)
+- Solves most simple single-word/line captchas within ~15 seconds
+- Copy-to-clipboard for solved text
+
+Note: Cross-origin images must permit CORS for preprocessing (and OCR worker fetch) to work.
 
 ## Setup
+- No build step is required.
+- Open index.html in a modern browser.
+- Internet access is required to download the OCR engine and English language data from CDNs.
 
-- No build required. This is a static web app.
-- Files:
-  - index.html
-  - README.md (this file, includes the MIT license)
+CDNs used:
+- Tesseract.js: https://cdn.jsdelivr.net/npm/tesseract.js
+- Trained data (eng): https://tessdata.projectnaptha.com/4.0.0
 
-You can open `index.html` directly in a browser or serve it with any static server.
-
-Examples:
-- Python: `python3 -m http.server 8080`
-- Node: `npx serve .`
-- Bun: `bunx serve .`
+To run fully offline, host those assets yourself and update the script/paths accordingly.
 
 ## Usage
-
-- Navigate to: `http://localhost:8080/index.html?url=https://example.com/captcha.png`
+- Navigate to: index.html?url=https://example.com/captcha.png
 - The page will:
-  1. Show the image.
-  2. Preprocess it.
-  3. Run OCR and display the solved text.
+  - Display the specified captcha image
+  - Preprocess it for OCR
+  - Solve and display the recognized text and approximate confidence
 
 Controls:
-- URL input: paste a new image URL and click Solve.
-- Sample: loads a built-in sample captcha if you don’t have a URL.
-- Preprocessing toggles:
-  - Invert: invert black/white if necessary.
-  - Binarize: Otsu thresholding for cleaner foreground/background separation.
-  - Denoise: simple median filter to reduce small noise.
-  - Scale: upscales image to help OCR.
+- Input: Paste a captcha URL.
+- Solve: Starts OCR on the provided URL.
+- Sample: Generates and solves a local sample captcha if you don’t have a URL.
+- Copy: Copies the solved text.
 
-Notes and tips:
-- Cross-origin images must allow CORS for pixel access when preprocessing/OCR. If the image server doesn’t set permissive CORS headers, the app may not be able to process the image. Use same-origin or CORS-enabled URLs.
-- For best results, pass relatively clean, single-line captchas comprised of alphanumeric characters.
-- The app initializes Tesseract in the background on load to reduce latency before the first solve.
+Tips for best results:
+- Provide a clear, high-contrast image with one word/line of text.
+- Avoid animated images or multi-line captchas.
+- Ensure the remote server sets appropriate CORS headers (Access-Control-Allow-Origin) so the browser can load/process the image.
 
 ## License
-
 MIT License
 
 Copyright (c) 2025
