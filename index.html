@@ -1,532 +1,474 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Captcha Solver (Tesseract.js)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
       color-scheme: light dark;
+      --bg: #0b0f14;
+      --panel: #141a22;
+      --text: #eaf2ff;
+      --muted: #95a3b3;
+      --accent: #4cc9f0;
+      --ok: #5efc8d;
+      --warn: #ffb703;
+      --err: #ff5d73;
+      --border: #243041;
     }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      margin: 0;
-      padding: 0 16px 32px 16px;
-      background: Canvas;
-      color: CanvasText;
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+    .wrap {
+      max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px;
+      display: grid; gap: 20px;
     }
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 16px 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
     }
-    h1 {
-      font-size: 20px;
-      margin: 0;
-    }
-    .bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    input[type="url"] {
-      flex: 1 1 420px;
-      min-width: 240px;
-      padding: 10px 12px;
-      border: 1px solid #bbb5;
-      border-radius: 8px;
-      font-size: 14px;
-      background: inherit;
-      color: inherit;
-      outline: none;
-    }
-    button {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #bbb5;
-      background: #0b5fff;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    button.secondary {
-      background: transparent;
-      color: inherit;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
-    .card {
-      border: 1px solid #bbb5;
-      border-radius: 10px;
-      padding: 12px;
-      background: color-mix(in oklab, Canvas, #000 3%);
-    }
-    .card h3 {
-      font-size: 14px;
-      margin: 0 0 8px 0;
-      opacity: 0.8;
-    }
-    .preview {
-      display: grid;
-      place-items: center;
-      min-height: 120px;
-      background: repeating-conic-gradient(from 0deg, #00000005 0 25%, transparent 0 50%) 0/12px 12px;
-      border-radius: 8px;
-      border: 1px dashed #bbb7;
-      overflow: hidden;
-    }
-    img, canvas {
-      max-width: 100%;
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-    }
-    .status {
-      margin-top: 10px;
-      font-size: 13px;
-      opacity: 0.9;
-      white-space: pre-wrap;
-    }
-    .result {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      word-break: break-word;
-      margin: 8px 0 0 0;
-    }
-    .hint {
-      font-size: 12px;
-      opacity: 0.7;
-    }
-    footer {
-      margin-top: 24px;
-      font-size: 12px;
-      opacity: 0.75;
+    h1 { font-size: 20px; margin: 0; letter-spacing: 0.3px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
     }
     .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-top: 8px;
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
     }
-    label {
-      font-size: 12px;
-      opacity: 0.8;
+    input[type="url"] {
+      width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: transparent; color: var(--text); outline: none;
+      font-size: 14px;
     }
-    .prog {
-      height: 8px;
-      border-radius: 999px;
-      background: #00000010;
-      overflow: hidden;
-      margin-top: 6px;
-      border: 1px solid #bbb5;
+    button {
+      padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: #1e2733; color: var(--text); cursor: pointer; font-weight: 600;
     }
-    .prog > div {
-      height: 100%;
-      background: linear-gradient(90deg, #0b5fff, #3ddc97);
-      width: 0%;
-      transition: width 0.2s ease;
+    button.primary { background: var(--accent); color: #001016; border-color: transparent; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
     }
-    .mono {
+    .grid .panel h3 { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    img, canvas {
+      width: 100%; height: auto; background: #0d1117; border: 1px dashed var(--border); border-radius: 8px;
+    }
+    .status {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre-wrap; font-size: 12px; color: var(--muted);
+      max-height: 180px; overflow: auto; background: #0d121a; border-radius: 8px; padding: 10px; border: 1px solid var(--border);
     }
+    .solution {
+      display: grid; gap: 6px;
+    }
+    .solution .val {
+      font-size: 28px; font-weight: 800; letter-spacing: 2px; color: var(--ok);
+      word-break: break-word;
+    }
+    .bad { color: var(--err); }
+    .warn { color: var(--warn); }
+    .row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .small { font-size: 12px; }
+    .time { font-variant-numeric: tabular-nums; }
+    a { color: var(--accent); text-decoration: none; }
+    footer { margin-top: 8px; color: var(--muted); font-size: 12px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.3/dist/tesseract.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Captcha Solver</h1>
-    <div class="bar">
-      <input id="urlInput" type="url" placeholder="Paste captcha image URL (or leave empty to use sample)" />
-      <button id="solveBtn">Solve</button>
-      <button id="sampleBtn" class="secondary" title="Use built-in sample">Sample</button>
-    </div>
-  </header>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Captcha Solver</h1>
+        <div class="muted">Browser-based OCR using Tesseract.js. Pass ?url=https://.../image.png</div>
+      </div>
+      <div class="muted">Solves most simple text captchas</div>
+    </header>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Original</h3>
-      <div class="preview">
-        <img id="captchaImg" alt="Captcha preview" crossorigin="anonymous" />
-      </div>
+    <div class="panel">
       <div class="row">
-        <label class="hint">Source: <span id="srcLabel" class="mono"></span></label>
+        <input id="urlInput" type="url" placeholder="https://example.com/captcha.png" />
+        <button id="genBtn" title="Generate a local sample captcha">Sample</button>
+        <button id="solveBtn" class="primary">Solve</button>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <div class="small">Current URL: <span id="currentUrl" class="muted"></span></div>
+        <div class="small">Elapsed: <span id="elapsed" class="time">0.00s</span></div>
       </div>
     </div>
-    <div class="card">
-      <h3>Preprocessed</h3>
-      <div class="preview">
+
+    <div class="grid">
+      <div class="panel">
+        <h3>Original image</h3>
+        <img id="img" alt="captcha" />
+      </div>
+      <div class="panel">
+        <h3>Preprocessed (for OCR)</h3>
         <canvas id="procCanvas"></canvas>
       </div>
-      <div class="row">
-        <label><input id="invertToggle" type="checkbox" /> Invert</label>
-        <label><input id="binarizeToggle" type="checkbox" checked /> Binarize</label>
-        <label><input id="denoiseToggle" type="checkbox" checked /> Denoise</label>
-        <label><input id="scaleSelect" type="range" min="1" max="4" value="2" step="0.5" /> Scale</label>
+    </div>
+
+    <div class="panel solution">
+      <div class="small muted">Solved text</div>
+      <div id="solution" class="val">—</div>
+      <div class="row2">
+        <button id="copyBtn" title="Copy solved text">Copy</button>
+        <span id="confidence" class="small muted"></span>
       </div>
     </div>
-    <div class="card">
-      <h3>Result</h3>
-      <div class="status mono" id="status">Idle</div>
-      <div class="prog"><div id="progressBar"></div></div>
-      <div class="result mono" id="resultText">—</div>
-      <div class="hint">Tries to solve within ~15 seconds using Tesseract.js (PSM: single line, whitelist: A–Z a–z 0–9)</div>
+
+    <div class="panel">
+      <h3>Logs</h3>
+      <div id="logs" class="status"></div>
     </div>
+
+    <footer>
+      Tip: For best results, provide high-contrast, single-word/line captchas. Cross-origin images must allow CORS.
+    </footer>
   </div>
 
-  <footer>
-    Tip: You can pass an image URL via the "url" query param, e.g. ?url=https://example.com/captcha.png
-  </footer>
+<script>
+(function() {
+  const els = {
+    urlInput: document.getElementById('urlInput'),
+    genBtn: document.getElementById('genBtn'),
+    solveBtn: document.getElementById('solveBtn'),
+    img: document.getElementById('img'),
+    procCanvas: document.getElementById('procCanvas'),
+    solution: document.getElementById('solution'),
+    confidence: document.getElementById('confidence'),
+    logs: document.getElementById('logs'),
+    currentUrl: document.getElementById('currentUrl'),
+    copyBtn: document.getElementById('copyBtn'),
+    elapsed: document.getElementById('elapsed'),
+  };
 
-  <!-- Tesseract.js from CDN -->
-  <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
-  <script>
-    // Utilities
-    function $(id){ return document.getElementById(id); }
-    function getQueryParam(name){
-      const u = new URL(window.location.href);
-      return u.searchParams.get(name);
-    }
-    function setQueryParam(name, value) {
-      const u = new URL(window.location.href);
-      if (value) u.searchParams.set(name, value);
-      else u.searchParams.delete(name);
-      history.replaceState({}, "", u.toString());
-    }
-    function defaultSampleDataURL() {
-      // SVG-based sample to avoid large base64 PNG; clean sans-serif text with slight rotation and noise lines.
-      const text = "AB12";
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="160" height="60">
-          <defs>
-            <filter id="noise">
-              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch" />
-              <feColorMatrix type="saturate" values="0"/>
-              <feComponentTransfer>
-                <feFuncA type="table" tableValues="0 0 0.02 0"/>
-              </feComponentTransfer>
-            </filter>
-          </defs>
-          <rect width="100%" height="100%" fill="#ffffff"/>
-          <g transform="translate(80,32) rotate(-4)">
-            <text x="0" y="0" dominant-baseline="middle" text-anchor="middle"
-              font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="#111">
-              ${text}
-            </text>
-          </g>
-          <g stroke="#333" stroke-width="1" opacity="0.5">
-            <line x1="5" y1="10" x2="155" y2="12"/>
-            <line x1="12" y1="50" x2="148" y2="46"/>
-          </g>
-          <rect width="100%" height="100%" filter="url(#noise)"/>
-        </svg>`;
-      return "data:image/svg+xml;charset=utf8," + encodeURIComponent(svg);
-    }
+  let worker = null;
+  let solving = false;
+  let timerStart = 0;
+  let tickTimer = null;
 
-    // Global state
-    let workerPromise = null;
-    let workerReady = false;
-    let solving = false;
-    let lastSolveAbort = null;
-    let statusTimer = null;
+  function log(msg, level = 'info') {
+    const time = new Date().toISOString().split('T')[1].replace('Z','');
+    const color = level === 'error' ? 'bad' : level === 'warn' ? 'warn' : '';
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="muted">${time}</span> ${color ? `<span class="${color}">` : ''}${escapeHtml(msg)}${color ? '</span>' : ''}`;
+    els.logs.appendChild(line);
+    els.logs.scrollTop = els.logs.scrollHeight;
+  }
 
-    const els = {
-      urlInput: $('urlInput'),
-      solveBtn: $('solveBtn'),
-      sampleBtn: $('sampleBtn'),
-      captchaImg: $('captchaImg'),
-      procCanvas: $('procCanvas'),
-      resultText: $('resultText'),
-      status: $('status'),
-      progressBar: $('progressBar'),
-      srcLabel: $('srcLabel'),
-      invertToggle: $('invertToggle'),
-      binarizeToggle: $('binarizeToggle'),
-      denoiseToggle: $('denoiseToggle'),
-      scaleSelect: $('scaleSelect')
-    };
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
 
-    function logStatus(msg){ els.status.textContent = msg; }
-    function setProgress(pct){ els.progressBar.style.width = Math.max(0, Math.min(100, pct)) + "%"; }
+  function setElapsed(start=timerStart) {
+    const ms = Date.now() - start;
+    els.elapsed.textContent = (ms/1000).toFixed(2) + 's';
+  }
 
-    async function getWorker() {
-      if (workerPromise) return workerPromise;
-      workerPromise = (async () => {
-        logStatus("Loading OCR engine...");
-        const worker = await Tesseract.createWorker({
-          logger: m => {
-            if (m.status && m.progress != null) {
-              logStatus(`${m.status} ${(m.progress*100).toFixed(0)}%`);
-              setProgress(m.progress*100);
-            }
-          },
-        });
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        await worker.setParameters({
-          // Whitelist common captcha charset
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
-          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE
-        });
-        workerReady = true;
-        return worker;
-      })();
-      return workerPromise;
+  function startTimer() {
+    timerStart = Date.now();
+    setElapsed();
+    clearInterval(tickTimer);
+    tickTimer = setInterval(setElapsed, 100);
+  }
+
+  function stopTimer() {
+    clearInterval(tickTimer);
+    setElapsed();
+  }
+
+  function parseQueryUrl() {
+    const u = new URL(window.location.href);
+    return u.searchParams.get('url') || '';
+  }
+
+  function updateCurrentUrl(u) {
+    els.currentUrl.textContent = u || '(generated sample)';
+  }
+
+  function randomText(len=5) {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = '';
+    for (let i=0; i<len; i++) s += alphabet[Math.floor(Math.random()*alphabet.length)];
+    return s;
+  }
+
+  function generateSample(width=220, height=90) {
+    const code = randomText(5);
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    const grad = ctx.createLinearGradient(0,0,width,height);
+    grad.addColorStop(0, '#e6eef7');
+    grad.addColorStop(1, '#c9d8ea');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,width,height);
+
+    // Noise lines
+    for (let i=0;i<8;i++) {
+      ctx.strokeStyle = `rgba(${120+Math.random()*80|0},${120+Math.random()*80|0},${120+Math.random()*80|0},0.75)`;
+      ctx.lineWidth = 1 + Math.random()*1.5;
+      ctx.beginPath();
+      ctx.moveTo(Math.random()*width, Math.random()*height);
+      ctx.bezierCurveTo(Math.random()*width, Math.random()*height, Math.random()*width, Math.random()*height, Math.random()*width, Math.random()*height);
+      ctx.stroke();
     }
 
-    function drawPreprocessed(img) {
-      const canvas = els.procCanvas;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      const scaleFactor = parseFloat(els.scaleSelect.value) || 2;
-      const targetW = Math.max(1, Math.floor(img.naturalWidth * scaleFactor));
-      const targetH = Math.max(1, Math.floor(img.naturalHeight * scaleFactor));
-      canvas.width = targetW;
-      canvas.height = targetH;
-      // Draw scaled
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, 0, 0, targetW, targetH);
-      // Get pixels
-      let imgData = ctx.getImageData(0, 0, targetW, targetH);
-      const data = imgData.data;
-
-      // Grayscale (luma)
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i+1], b = data[i+2];
-        const y = Math.round(0.299*r + 0.587*g + 0.114*b);
-        data[i] = data[i+1] = data[i+2] = y;
-      }
-
-      // Optional denoise (simple 3x3 median)
-      if (els.denoiseToggle.checked) {
-        const copy = new Uint8ClampedArray(data);
-        const w = targetW, h = targetH;
-        const idx = (x,y) => 4*(y*w + x);
-        for (let y=1;y<h-1;y++){
-          for (let x=1;x<w-1;x++){
-            const vals = [];
-            for (let j=-1;j<=1;j++){
-              for (let i=-1;i<=1;i++){
-                vals.push(copy[idx(x+i,y+j)]);
-              }
-            }
-            vals.sort((a,b)=>a-b);
-            const m = vals[4];
-            const k = idx(x,y);
-            data[k]=data[k+1]=data[k+2]=m;
-          }
-        }
-      }
-
-      // Otsu threshold
-      let threshold = 127;
-      if (els.binarizeToggle.checked) {
-        const hist = new Uint32Array(256);
-        for (let i=0;i<data.length;i+=4) hist[data[i]]++;
-        threshold = otsu(hist, (targetW * targetH));
-        for (let i=0;i<data.length;i+=4) {
-          const v = data[i] > threshold ? 255 : 0;
-          data[i]=data[i+1]=data[i+2]=v;
-        }
-      }
-
-      // Optional invert
-      if (els.invertToggle.checked) {
-        for (let i=0;i<data.length;i+=4) {
-          data[i]=255-data[i];
-          data[i+1]=255-data[i+1];
-          data[i+2]=255-data[i+2];
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-      return canvas;
+    // Text with slight rotation per char
+    const baseY = height*0.65;
+    let x = 20;
+    for (let i=0;i<code.length;i++) {
+      const ch = code[i];
+      const rot = (Math.random()*0.4 - 0.2);
+      ctx.save();
+      ctx.translate(x, baseY);
+      ctx.rotate(rot);
+      ctx.font = `700 ${46 + (Math.random()*6|0)}px ui-monospace,monospace`;
+      ctx.fillStyle = '#243147';
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0d1526';
+      ctx.strokeText(ch, 0, 0);
+      ctx.fillText(ch, 0, 0);
+      ctx.restore();
+      x += 34 + Math.random()*6;
     }
 
-    function otsu(hist, total) {
-      let sum = 0;
-      for (let t=0;t<256;t++) sum += t * hist[t];
-      let sumB = 0, wB = 0, wF = 0, varMax = 0, threshold = 0;
-      for (let t=0;t<256;t++) {
-        wB += hist[t];
-        if (wB === 0) continue;
-        wF = total - wB;
-        if (wF === 0) break;
-        sumB += t * hist[t];
-        const mB = sumB / wB;
-        const mF = (sum - sumB) / wF;
-        const between = wB * wF * (mB - mF) * (mB - mF);
-        if (between > varMax) {
-          varMax = between; threshold = t;
-        }
-      }
-      return threshold;
+    // Salt-and-pepper noise
+    const imgd = ctx.getImageData(0,0,width,height);
+    const d = imgd.data;
+    for (let i=0; i<width*height; i+=11) {
+      const idx = i*4;
+      const v = Math.random() < 0.5 ? 0 : 255;
+      d[idx] = d[idx+1] = d[idx+2] = v;
+      d[idx+3] = 30;
+    }
+    ctx.putImageData(imgd, 0, 0);
+
+    return { dataUrl: canvas.toDataURL('image/png'), code };
+  }
+
+  async function ensureWorker() {
+    if (worker) return worker;
+    log('Loading Tesseract worker...');
+    worker = Tesseract.createWorker({
+      logger: m => {
+        if (m.status) log(`${m.status} ${(m.progress*100).toFixed(0)}%`);
+      },
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0'
+    });
+    await worker.load();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    // Parameters tuned for single word captchas
+    await worker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+      preserve_interword_spaces: '1',
+      user_defined_dpi: '300',
+      tessedit_pageseg_mode: '8' // PSM_SINGLE_WORD
+    });
+    log('Worker ready.');
+    return worker;
+  }
+
+  function toGrayscaleAndBinarize(img, targetW=420) {
+    // Draw image scaled, grayscale, Otsu threshold
+    const cnv = els.procCanvas;
+    const ctx = cnv.getContext('2d');
+
+    const scale = Math.max(1, targetW / img.width);
+    const W = Math.round(img.width * scale);
+    const H = Math.round(img.height * scale);
+    cnv.width = W; cnv.height = H;
+
+    // Draw scaled with smoothing off to preserve edges
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, W, H);
+
+    let imgData;
+    try {
+      imgData = ctx.getImageData(0, 0, W, H);
+    } catch (e) {
+      log('Canvas is tainted (CORS). Skipping preprocessing.', 'warn');
+      return null;
+    }
+    const data = imgData.data;
+    const hist = new Uint32Array(256);
+
+    // Grayscale and build histogram
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      // Luma Rec. 601
+      const y = (0.299*r + 0.587*g + 0.114*b) | 0;
+      data[i] = data[i+1] = data[i+2] = y;
+      hist[y]++;
     }
 
-    function setImageSource(src) {
-      els.captchaImg.src = "";
-      els.captchaImg.crossOrigin = "anonymous";
-      els.captchaImg.src = src;
-      els.srcLabel.textContent = src.length > 72 ? src.slice(0, 69) + "..." : src;
+    // Otsu threshold
+    const total = W * H;
+    let sum = 0;
+    for (let t=0;t<256;t++) sum += t * hist[t];
+    let sumB = 0, wB = 0, wF = 0, mB = 0, mF = 0, maxVar = 0, thresh = 127;
+    for (let t=0;t<256;t++) {
+      wB += hist[t];
+      if (wB === 0) continue;
+      wF = total - wB;
+      if (wF === 0) break;
+      sumB += t * hist[t];
+      mB = sumB / wB;
+      mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if (between > maxVar) { maxVar = between; thresh = t; }
     }
 
-    async function solveCurrent() {
-      if (solving) {
-        return;
-      }
-      solving = true;
-      els.solveBtn.disabled = true;
-      els.resultText.textContent = "…";
-      setProgress(0);
-      logStatus("Preparing...");
+    // Binarize and slight dilation-like strengthening
+    for (let i = 0; i < data.length; i += 4) {
+      const v = data[i] > thresh ? 255 : 0;
+      data[i] = data[i+1] = data[i+2] = v;
+      data[i+3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return cnv;
+  }
 
-      // Abort controller for the 15s requirement
-      const abortController = new AbortController();
-      lastSolveAbort = abortController;
-      const fifteenSec = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("timeout")), 15000);
-      });
+  async function fetchAsObjectURL(url) {
+    try {
+      const res = await fetch(url, { mode: 'cors', cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      log(`Fetch failed or CORS blocked: ${e.message}`, 'warn');
+      return null;
+    }
+  }
 
-      const img = els.captchaImg;
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = (e) => reject(new Error('Failed to load image'));
+      img.src = src;
+    });
+  }
+
+  function sanitizeText(text) {
+    const out = (text || '')
+      .replace(/[\s\r\n]+/g, '')
+      .replace(/[^0-9A-Za-z]/g, '')
+      .toUpperCase();
+    return out;
+  }
+
+  async function solve(url) {
+    if (solving) return;
+    solving = true;
+    els.solveBtn.disabled = true;
+    els.solution.textContent = 'Solving...';
+    els.confidence.textContent = '';
+    startTimer();
+
+    try {
+      updateCurrentUrl(url);
+      els.img.src = ''; // reset
+      els.procCanvas.width = 10; els.procCanvas.height = 10;
+
+      let displaySrc = url;
+      // Try to fetch as object URL to avoid CORS taint
+      const objUrl = url.startsWith('data:') ? null : await fetchAsObjectURL(url);
+      if (objUrl) displaySrc = objUrl;
+
+      // Display original
+      els.img.src = displaySrc;
+
+      // Preprocess if possible
+      let inputForOCR = displaySrc;
       try {
-        await imgDecode(img);
+        const img = await loadImage(displaySrc);
+        const pre = toGrayscaleAndBinarize(img);
+        if (pre) inputForOCR = pre; // pass canvas to OCR
       } catch (e) {
-        logStatus("Failed to load image. Check URL or CORS.");
-        els.resultText.textContent = "Load error";
-        solving = false;
-        els.solveBtn.disabled = false;
-        return;
+        log(`Preprocess image load failed: ${e.message}`, 'warn');
       }
 
-      // Preprocess quickly
-      let canvas = drawPreprocessed(img);
+      // Ensure worker and recognize
+      await ensureWorker();
 
-      // Start worker load in parallel
-      const worker = await getWorker();
+      log('Recognizing...');
+      const result = await worker.recognize(inputForOCR);
+      let { text, confidence } = result.data;
+      const cleaned = sanitizeText(text);
 
-      // Rebuild canvas if user toggles while solving
-      const uiObserver = new MutationObserver(() => {
-        if (!solving) return;
-        canvas = drawPreprocessed(img);
-      });
-      // Observe toggles
-      uiObserver.observe(document.body, { attributes: true, subtree: true }); // crude but fine for this demo
-      const finish = () => { uiObserver.disconnect(); };
-
-      // Race recognition against 15s timer
-      logStatus("Recognizing...");
-      try {
-        const recogPromise = worker.recognize(canvas);
-        const { data } = await Promise.race([recogPromise, fifteenSec]);
-        let text = (data && data.text || "").trim();
-        logStatus("Done");
-        setProgress(100);
-        if (!text) text = "[empty]";
-        els.resultText.textContent = text;
-      } catch (e) {
-        if (e && e.message === "timeout") {
-          logStatus("Timed out at 15s. Showing best-effort quick guess...");
-          // Quick guess: try without denoise/binarize constraints as fallback
-          // Minimal extra attempt (fast)
-          try {
-            els.binarizeToggle.checked = true;
-            els.denoiseToggle.checked = false;
-            els.invertToggle.checked = false;
-            canvas = drawPreprocessed(img);
-            const { data } = await Promise.race([
-              worker.recognize(canvas),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("fallback-timeout")), 3000))
-            ]);
-            let text = (data && data.text || "").trim();
-            els.resultText.textContent = text || "[no result]";
-          } catch {
-            els.resultText.textContent = "[timeout]";
-          }
-        } else {
-          logStatus("Recognition error");
-          els.resultText.textContent = "[error]";
-          console.error(e);
-        }
-      } finally {
-        finish();
-        solving = false;
-        els.solveBtn.disabled = false;
-      }
+      els.solution.textContent = cleaned || '(no text detected)';
+      els.confidence.textContent = `Confidence: ${confidence?.toFixed ? confidence.toFixed(1) : confidence}%`;
+      const totalMs = Date.now() - timerStart;
+      log(`Done in ${(totalMs/1000).toFixed(2)}s. Raw: "${(text||'').trim()}" -> Clean: "${cleaned}" (conf ${confidence})`);
+    } catch (e) {
+      console.error(e);
+      log(`Error: ${e.message}`, 'error');
+      els.solution.textContent = '(error)';
+      els.confidence.textContent = '';
+    } finally {
+      stopTimer();
+      els.solveBtn.disabled = false;
+      solving = false;
     }
+  }
 
-    function imgDecode(imgEl) {
-      return new Promise((resolve, reject) => {
-        if (imgEl.complete && imgEl.naturalWidth) return resolve();
-        const onLoad = () => { cleanup(); resolve(); };
-        const onErr = () => { cleanup(); reject(new Error("image-error")); };
-        const cleanup = () => {
-          imgEl.removeEventListener('load', onLoad);
-          imgEl.removeEventListener('error', onErr);
-        };
-        imgEl.addEventListener('load', onLoad);
-        imgEl.addEventListener('error', onErr);
-      });
+  function setUrlParam(url) {
+    const u = new URL(window.location.href);
+    if (url) u.searchParams.set('url', url);
+    else u.searchParams.delete('url');
+    history.replaceState(null, '', u.toString());
+  }
+
+  // Event handlers
+  els.solveBtn.addEventListener('click', () => {
+    const val = els.urlInput.value.trim();
+    if (val.length === 0) {
+      log('Please enter a URL or click Sample.', 'warn');
+      return;
     }
+    setUrlParam(val);
+    solve(val);
+  });
 
-    function applyFromQueryOrDefault() {
-      const qUrl = getQueryParam('url');
-      const src = qUrl || defaultSampleDataURL();
-      if (!qUrl) setQueryParam('url', src);
-      els.urlInput.value = src;
-      setImageSource(src);
+  els.genBtn.addEventListener('click', () => {
+    const { dataUrl } = generateSample();
+    els.urlInput.value = dataUrl;
+    setUrlParam('');
+    solve(dataUrl);
+  });
+
+  els.copyBtn.addEventListener('click', async () => {
+    const text = els.solution.textContent || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      log('Copied solved text to clipboard.');
+    } catch {
+      log('Clipboard write failed.', 'warn');
     }
+  });
 
-    // Events
-    els.solveBtn.addEventListener('click', () => {
-      const val = els.urlInput.value.trim();
-      if (val) {
-        setQueryParam('url', val);
-        setImageSource(val);
-      }
-      solveCurrent();
-    });
+  // On load: use ?url= param or generate a default sample
+  window.addEventListener('load', () => {
+    const qurl = parseQueryUrl();
+    if (qurl) {
+      els.urlInput.value = qurl;
+      solve(qurl);
+    } else {
+      const { dataUrl } = generateSample();
+      els.urlInput.value = dataUrl;
+      solve(dataUrl);
+    }
+  });
 
-    els.sampleBtn.addEventListener('click', () => {
-      const sample = defaultSampleDataURL();
-      els.urlInput.value = sample;
-      setQueryParam('url', sample);
-      setImageSource(sample);
-      solveCurrent();
-    });
-
-    els.captchaImg.addEventListener('load', () => {
-      drawPreprocessed(els.captchaImg);
-    });
-    [els.invertToggle, els.binarizeToggle, els.denoiseToggle, els.scaleSelect].forEach(el => {
-      el.addEventListener('input', () => {
-        if (els.captchaImg.naturalWidth) {
-          drawPreprocessed(els.captchaImg);
-        }
-      });
-    });
-
-    // Init
-    (async function init(){
-      applyFromQueryOrDefault();
-      // Warm up worker early to save time
-      getWorker().catch(err => console.error(err));
-      // Auto-solve on first load
-      // Wait for image to be ready
-      try {
-        await imgDecode(els.captchaImg);
-      } catch {}
-      drawPreprocessed(els.captchaImg);
-      solveCurrent();
-    })();
-  </script>
+})();
+</script>
 </body>
 </html>
